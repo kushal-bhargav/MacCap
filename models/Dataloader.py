@@ -68,11 +68,11 @@ class ROCOClipDataset(Dataset):
         
         # Build the CSV file path based on the split and category.
         if split == "train":
-            csv_file = os.path.join(data_root, "all_data", split, "radiologytraindata.csv")
+            csv_file = "/kaggle/input/roco-dataset/all_data/train/radiologytraindata.csv"
         elif split == "validation":
-            csv_file = os.path.join(data_root, "all_data", split, "radiologyvaldata.csv")
+            csv_file = "/kaggle/input/roco-dataset/all_data/validation/radiologyvaldata.csv"
         elif split == "test":
-            csv_file = os.path.join(data_root, "all_data", split, "radiologytestdata.csv")
+            csv_file = "/kaggle/input/roco-dataset/all_data/test/radiologytestdata.csv"
         else:
             raise ValueError(f"Unknown split: {split}")
         
@@ -159,11 +159,11 @@ class ROCOCaptionDataset(Dataset):
         """
         if split == 'test':
             # The image_prefix_path should point to the folder with test images.
-            self.image_path = args.test_image_prefix_path
-            csv_file = args.test_path
+            self.image_path = "/kaggle/input/roco-dataset/all_data/test/radiology/images/"
+            csv_file = "/kaggle/input/roco-dataset/all_data/test/radiologytestdata.csv"
         elif split == 'val':
-            self.image_path = args.val_image_prefix_path
-            csv_file = args.val_path
+            self.image_path = "/kaggle/input/roco-dataset/all_data/validation/radiology/images/"
+            csv_file = "/kaggle/input/roco-dataset/all_data/validation/radiologyvaldata.csv"
         else:
             raise NotImplementedError
         

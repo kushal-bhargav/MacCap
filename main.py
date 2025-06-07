@@ -1,23 +1,33 @@
 import os
-import sys
-import json
+import os.path
+import json   # optionally used if you want to save & load tokenized cache
+import random
+import re
+import pandas as pd
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.dataloader import default_collate
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 from tqdm import tqdm
 import argparse
+import sys
 
-# Import distributed utilities and saving functions
+# ------------------------------------------------------------------------------
+# Import distributed utilities and saving functions.
+# ------------------------------------------------------------------------------
 from models.misc import is_dist_avail_and_initialized, save_on_master, init_distributed_mode
-# IMPORTANT: Replace the COCO-specific imports with your ROCO dataset classes.
-from models.dataloader_roco import ROCOClipDataset, ROCOCaptionDataset, id_collate
+
+# ------------------------------------------------------------------------------
+# Use the new ROCO dataset classes (placed in models/dataloader_roco.py)
+# ------------------------------------------------------------------------------
+from models.Dataloader import ROCOClipDataset, ROCOCaptionDataset, id_collate
+
 from models.models import build_model
 from models.scheduler import CosineAnnealingLRWarmup
 from models.engine import train_one_epoch, eval_caption
 
-# Environment variable for SSL certs (if needed)
 os.environ['CURL_CA_BUNDLE'] = ''
 
 def train_decoder(dataset: ROCOClipDataset, args,
@@ -42,7 +52,7 @@ def train_decoder(dataset: ROCOClipDataset, args,
         os.makedirs(output_dir, exist_ok=True)
     args.is_master = args.rank == 0
 
-    # Set device
+    # Set the device
     device = torch.device('cuda:' + str(args.gpu))
     SEED = 42
     torch.cuda.manual_seed_all(SEED)
@@ -104,10 +114,10 @@ def train_decoder(dataset: ROCOClipDataset, args,
 
     if args.eval:
         if is_dist_avail_and_initialized():
-            eval_caption(model.module, output_dir, args, test_dataloader, device, f'test', split='test')
+            eval_caption(model.module, output_dir, args, test_dataloader, device, 'test', split='test')
             torch.distributed.barrier()
         else:
-            eval_caption(model, output_dir, args, test_dataloader, device, f'test', split='test')
+            eval_caption(model, output_dir, args, test_dataloader, device, 'test', split='test')
         return
 
     for epoch in range(args.start_epoch, epochs):
@@ -158,20 +168,20 @@ def train_decoder(dataset: ROCOClipDataset, args,
                 eval_caption(model, output_dir, args, val_dataloader, device, f'epoch_end_{epoch}', split='val')
 
     if is_dist_avail_and_initialized():
-        eval_caption(model.module, output_dir, args, test_dataloader, device, f'test', split='test')
+        eval_caption(model.module, output_dir, args, test_dataloader, device, 'test', split='test')
         torch.distributed.barrier()
     else:
-        eval_caption(model, output_dir, args, test_dataloader, device, f'test', split='test')
+        eval_caption(model, output_dir, args, test_dataloader, device, 'test', split='test')
 
     return model
 
 def main():
     parser = argparse.ArgumentParser()
 
-    # Basic experiment arguments
+    # Basic experiment and dataset settings
     parser.add_argument('--data_root', default='./data/roco-dataset', help='Base directory of the ROCO dataset')
     parser.add_argument('--dataset', default='roco', help='Dataset name e.g., roco')
-    parser.add_argument('--category', default='radiology', help='Dataset category, e.g., radiology or non-radiology')
+    parser.add_argument('--category', default='radiology', help='Dataset category e.g., radiology or non-radiology')
     parser.add_argument('--out_dir', default='./roco_model', help='Output directory for the model')
     parser.add_argument('--prefix', default='./roco_prefix', help='Prefix for saved filenames')
     parser.add_argument('--epochs', type=int, default=10)
@@ -214,7 +224,7 @@ def main():
     parser.add_argument('--eval_desc', default='')
     parser.add_argument('--num_decoder_layer', default=1, type=int)
 
-    # Memory bank parameters, noise, contrastive generation, etc. (additional args omitted for brevity)
+    # Additional training arguments for ROCO (or similar) configuration.
     parser.add_argument('--train_max_length', default=77, type=int)
     parser.add_argument('--train_caption', action='store_true')
     parser.add_argument('--train_w_image', action='store_true')
@@ -229,7 +239,7 @@ def main():
 
     args = parser.parse_args()
 
-    # Create the training dataset using the ROCOClipDataset.
+    # Create the training dataset using ROCOClipDataset.
     dataset = ROCOClipDataset(
         data_root=args.data_root,
         split="train",
@@ -245,7 +255,7 @@ def main():
     val_dataset = ROCOCaptionDataset(args, 'val', max_words=50)
     print('Datasets generated!')
 
-    # Pass the datasets to your training function.
+    # Pass the datasets to the training routine.
     train_decoder(
         dataset,
         args,

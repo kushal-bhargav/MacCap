@@ -182,6 +182,7 @@ def main():
     parser.add_argument('--data_root', default='./data/roco-dataset', help='Base directory of the ROCO dataset')
     parser.add_argument('--ft_llm', action='store_true', help='Finetune the large language model if set')
     parser.add_argument('--noise_variance', type=float, default=0.0, help='Noise variance for training')
+    parser.add_argument('--noise_type', type=str, default='default', help='Type of noise to use')
     parser.add_argument('--dataset', default='roco', help='Dataset name e.g., roco')
     parser.add_argument('--category', default='radiology', help='Dataset category e.g., radiology or non-radiology')
     parser.add_argument('--out_dir', default='./roco_model', help='Output directory for the model')

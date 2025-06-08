@@ -37,11 +37,16 @@ class ROCO(BaseModel):
         decoder_norm = LayerNorm(prefix_size)
         self.aligner = TransformerDecoder(decoder_layer, args.num_decoder_layer, decoder_norm)
         
-        # Noise injection parameters
+        # Define additional attributes with safe defaults.
+        self.infer_patch_weight = getattr(args, 'infer_patch_weight', 1.0)
+        self.train_seq_length = getattr(args, 'train_seq_length', 77)
+        self.variance = getattr(args, 'img_noise_variance', 0.0)
+        
+        # Noise injection parameters from new parser arguments
         self.num_noise = args.num_noise
         self.eval_variance = args.noise_k
         self.sampling_type = args.sampling_type
-
+        
         if self.sampling_type in ['reconstruction', 'reconstruction_rank']:
             self.noise_N_var = args.noise_N_var
         elif self.sampling_type in ['reconstruction_repeat', 
@@ -51,6 +56,9 @@ class ROCO(BaseModel):
             if len(self.noise_N_var) != 1:
                 raise ValueError('unrecognizable args.noise_N_var!')
             self.noise_N_var = self.noise_N_var * args.num_reconstruction
+        else:
+            # Default assignment if no specific sampling type is set.
+            self.noise_N_var = args.noise_N_var
 
     def generate(self, img, gen_strategy, clip_tokens=None):
         bs = img.shape[0]
@@ -69,7 +77,7 @@ class ROCO(BaseModel):
         mixed_patch_feature = []
         # Get attention weights for image patches (assumed shape: bs x 50 x 50)
         cls_weight = attn_weight[:, 0, :]
-        top_cls_patch_ids = cls_weight.topk(self.train_seq_length).indices  # self.train_seq_length from BaseModel/args
+        top_cls_patch_ids = cls_weight.topk(self.train_seq_length).indices  # using self.train_seq_length
 
         for idx in range(bs):
             tp_idx = top_cls_patch_ids[idx]
@@ -146,7 +154,7 @@ def build_model(args):
     # Initialize the language model and tokenizer
     llm = AutoModelForCausalLM.from_pretrained(args.language_model, torch_dtype=torch.float16)
     tokenizer = AutoTokenizer.from_pretrained(args.language_model, use_fast=False)
-    if not args.ft_llm:
+    if not getattr(args, 'ft_llm', False):
         for p in llm.parameters():
             p.requires_grad = False
     else:

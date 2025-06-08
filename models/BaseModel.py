@@ -49,7 +49,8 @@ class BaseModel(nn.Module):
         self.min_len = 1
         self.num_beams = 5
         # self.num_ans_candidates = 128
-        self.variance = args.noise_variance
+        # self.variance = args.noise_variance
+        self.variance = getattr(args, 'img_noise_variance', 0.0)
         self.noise_type = args.noise_type
         # inference parameters for dcn_seq
         self.infer_patch_weight = args.infer_patch_weight

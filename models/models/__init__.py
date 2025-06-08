@@ -31,4 +31,4 @@ def build_model(args):
         """
         return build_roco(args)
 
-    raise NotImplementedError
+    raise NotImplementedError("Model name {} not implemented".format(args.model_name))

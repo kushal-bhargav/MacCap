@@ -227,6 +227,7 @@ def main():
     parser.add_argument('--warmup_steps', default=200, type=int)
     parser.add_argument('--num_query', default=32, type=int)
     parser.add_argument('--num_workers', default=8, type=int)
+    parser.add_argument('--mask_ratio', default=0.15, type=float)
 
     parser.add_argument('--eval_type', default='caption', choices=['caption', 'retrieval', 'token_analysis', 'vqa'])
     parser.add_argument('--eval', action='store_true')

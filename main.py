@@ -190,6 +190,8 @@ def main():
         help='Weight given to the “patch-level inference” loss term.'
     )
 
+    parser.add_argument('--memory_path', default='./data/decap_cc3m.pth')
+    
     parser.add_argument(
         '--train_seq_length',
         type=int,

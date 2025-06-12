@@ -196,7 +196,7 @@ def main():
         default=77,  # or whatever default value is appropriate
         help='Training sequence length to be used by the model'
     )
-  
+    parser.add_argument('--infer_multi_cls', action='store_true')
     parser.add_argument('--ft_llm', action='store_true', help='Finetune the large language model if set')
     parser.add_argument('--noise_variance', type=float, default=0.0, help='Noise variance for training')
     parser.add_argument('--infer_variance_ratio', default=0.1, type=float)

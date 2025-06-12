@@ -189,6 +189,14 @@ def main():
         default=0.5,           # ← pick the value your model/paper expects
         help='Weight given to the “patch-level inference” loss term.'
     )
+
+    parser.add_argument(
+        '--train_seq_length',
+        type=int,
+        default=77,  # or whatever default value is appropriate
+        help='Training sequence length to be used by the model'
+    )
+  
     parser.add_argument('--ft_llm', action='store_true', help='Finetune the large language model if set')
     parser.add_argument('--noise_variance', type=float, default=0.0, help='Noise variance for training')
     parser.add_argument('--noise_type', type=str, default='default', help='Type of noise to use')
